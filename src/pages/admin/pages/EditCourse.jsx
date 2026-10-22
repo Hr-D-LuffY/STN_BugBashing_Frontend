@@ -38,8 +38,9 @@ export default function EditCourse() {
                 price: currentCourse.price || 0,
                 category: currentCourse.category || "",
                 tags: (currentCourse.tags || []).join(", "),
-                batches: currentCourse.batches || [],
-                syllabus: currentCourse.syllabus || [],
+                // deep copies: the course in the Redux store is read-only (frozen)
+                batches: structuredClone(currentCourse.batches || []),
+                syllabus: structuredClone(currentCourse.syllabus || []),
             });
         }
     }, [currentCourse]);
