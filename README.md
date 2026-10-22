@@ -5,8 +5,12 @@ Video link: https://drive.google.com/file/d/1vjMrBxr0-7xqjxMX2EBEBw30D_av1pOu/vi
 
 A modern E-learning platform frontend built with React, Redux Toolkit, and Tailwind CSS.
 
-Admin email: admin@coursemaster.com
-Pass: admin123
+Demo accounts (created by the backend's `npm run seed`, local development only):
+
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | admin@coursemaster.com | admin123 |
+| Student | student@coursemaster.com | student123 |
 
 ## Project Name & Description
 
@@ -25,10 +29,13 @@ This is the frontend application of the CourseMaster platform, built with modern
 
 ## Installation
 
+**Prerequisites:** Node.js 18+ and the CourseMaster backend running (see the backend README:
+`courseMaster_Backend`, start it with `npm run dev` - it listens on `http://localhost:5000`).
+
 1. Clone the repository
 2. Navigate to the frontend directory:
    ```bash
-   cd course-master-frontend
+   cd courseMaster_frontEnd
    ```
 
 3. Install dependencies:
@@ -36,12 +43,18 @@ This is the frontend application of the CourseMaster platform, built with modern
    npm install
    ```
 
-4. Create a `.env` file in the root directory (see `.env.example`)
+4. Create your environment file from the template:
+   ```bash
+   cp .env.example .env        # Windows PowerShell: Copy-Item .env.example .env
+   ```
+   For local development the default `VITE_API_BASE_URL=http://localhost:5000/api` is correct.
 
 5. Start the development server:
    ```bash
    npm run dev
    ```
+   Open `http://localhost:5173` and sign in with one of the demo accounts above
+   (after running `npm run seed` in the backend).
 
 6. Build for production:
    ```bash
@@ -53,10 +66,10 @@ This is the frontend application of the CourseMaster platform, built with modern
 Create a `.env` file in the root directory with the following variables (see `.env.example` for reference):
 
 ```env
-# Backend API Base URL
+# Backend API Base URL (must end with /api)
 VITE_API_BASE_URL=http://localhost:5000/api
-# For production, use your deployed backend URL:
-# VITE_API_BASE_URL=http://localhost:5000/api/api
+# For production, use your deployed backend URL, for example:
+# VITE_API_BASE_URL=https://your-backend-domain.example.com/api
 ```
 
 **Required Variables:**

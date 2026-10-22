@@ -16,50 +16,59 @@ export default function CoursesSection() {
     // query states
     const [page, setPage] = useState(1);
     const [limit] = useState(8);
-    const [search, setSearch] = useState("");
-    const [sort, setSort] = useState("");
-    const [category, setCategory] = useState("");
-    const [tags, setTags] = useState("");
+    const [search, setSearch] = useState(""); // what is typed in the search box
+    const [query, setQuery] = useState(""); // search text that is actually applied
+    const [sort, setSortValue] = useState("");
+    const [category, setCategoryValue] = useState("");
+    const [tags, setTagsValue] = useState("");
 
-    const fetchCourses = async () => {
-        try {
-            setLoading(true);
-            setError(null);
-
-            const params = {
-                page,
-                limit,
-                search: search || undefined,
-                sort: sort || undefined,
-                category: category || undefined,
-                tags: tags || undefined,
-            };
-
-            const res = await getCourses(params);
-            setCourses(res.data.courses || []);
-            setTotalPages(res.data.totalPages || 1);
-        } catch (err) {
-            setError("Failed to load courses");
-        } finally {
-            setLoading(false);
-        }
+    // changing a filter also goes back to page 1 in the same update, so only one request is sent
+    const withFirstPage = (setter) => (value) => {
+        setter(value);
+        setPage(1);
     };
+    const setSort = withFirstPage(setSortValue);
+    const setCategory = withFirstPage(setCategoryValue);
+    const setTags = withFirstPage(setTagsValue);
 
     useEffect(() => {
-        fetchCourses();
-        // eslint-disable-next-line
-    }, [page, sort, category, tags]);
+        let cancelled = false;
+
+        const loadCourses = async () => {
+            try {
+                setLoading(true);
+                setError(null);
+
+                const res = await getCourses({
+                    page,
+                    limit,
+                    search: query || undefined,
+                    sort: sort || undefined,
+                    category: category || undefined,
+                    tags: tags || undefined,
+                });
+                if (cancelled) return;
+                setCourses(res.data.courses || []);
+                setTotalPages(res.data.totalPages || 1);
+            } catch {
+                if (!cancelled) setError("Failed to load courses");
+            } finally {
+                if (!cancelled) setLoading(false);
+            }
+        };
+
+        loadCourses();
+        // ignore the response of a request that was replaced by a newer one
+        return () => {
+            cancelled = true;
+        };
+    }, [page, limit, query, sort, category, tags]);
 
     const onSearchSubmit = (e) => {
         e.preventDefault();
+        setQuery(search.trim());
         setPage(1);
-        fetchCourses();
     };
-
-    // reset page when filters change
-    useEffect(() => {
-        setPage(1);
-    }, [sort, category, tags]);
 
     return (
         <div className="space-y-6">
