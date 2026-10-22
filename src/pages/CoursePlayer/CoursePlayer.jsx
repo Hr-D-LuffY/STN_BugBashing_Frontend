@@ -113,6 +113,9 @@ export default function CoursePlayer() {
 
     const module = currentCourse.syllabus?.[selectedModule];
     const lesson = module?.lessons?.[selectedLesson];
+    const isLessonCompleted = !!enrollment?.progress?.completedLessons?.some(
+        (completedId) => String(completedId) === String(lesson?._id)
+    );
 
     return (
         <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-4">
@@ -139,9 +142,9 @@ export default function CoursePlayer() {
                         <div className="card bg-base-100 shadow">
                             <div className="card-body p-3 sm:p-6">
                                 <h3 className="card-title text-base sm:text-lg md:text-xl break-words">{lesson.title}</h3>
-                                <div className="bg-base-300 rounded overflow-hidden mt-2 sm:mt-4">
+                                <div className="bg-base-300 rounded overflow-hidden mt-2 sm:mt-4 aspect-video w-full">
                                     <iframe
-                                        style={{ height: '700px', width: '300px' }}
+                                        className="w-full h-full"
                                         src={convertToEmbedUrl(lesson.videoUrl)}
                                         title={lesson.title}
                                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -152,10 +155,10 @@ export default function CoursePlayer() {
 
                                 <button
                                     onClick={handleMarkComplete}
-                                    disabled={!!enrollment?.progress?.completedLessons?.includes(lesson)}
-                                    className={`btn btn-sm sm:btn-md ${enrollment?.progress?.completedLessons?.includes(lesson) ? "btn-disabled" : "btn-success"} mt-3 sm:mt-4 w-full sm:w-auto`}
+                                    disabled={isLessonCompleted}
+                                    className={`btn btn-sm sm:btn-md ${isLessonCompleted ? "btn-disabled" : "btn-success"} mt-3 sm:mt-4 w-full sm:w-auto`}
                                 >
-                                    {enrollment?.progress?.completedLessons?.includes(lesson) ? "Completed ✓" : "✓ Mark as Complete"}
+                                    {isLessonCompleted ? "Completed ✓" : "✓ Mark as Complete"}
                                 </button>
                             </div>
                         </div>

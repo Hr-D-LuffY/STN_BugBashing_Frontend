@@ -59,7 +59,7 @@ export default function AdminOverview() {
             value: enrollments.length,
             colorClass: "bg-gradient-to-br from-primary to-primary/80 text-primary-content",
             icon: <Users className="w-8 h-8" />,
-            trend: "+12%",
+            trend: null,
         },
         {
             title: "Pending Assignments",
@@ -133,9 +133,9 @@ export default function AdminOverview() {
     ];
 
     // Enrollment by course (top 5)
-    const courseEnrollmentData = analytics?.topCourses?.slice(0, 5).map((course) => ({
-        name: course.courseTitle?.substring(0, 15) || "Unknown",
-        enrollments: course.count,
+    const courseEnrollmentData = analytics?.enrollmentsByCourse?.slice(0, 5).map((course) => ({
+        name: course.courseName?.substring(0, 15) || "Unknown",
+        enrollments: course.enrollments,
     })) || [];
 
     return (
