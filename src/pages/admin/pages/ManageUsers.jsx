@@ -156,6 +156,123 @@ export default function ManageUsers() {
         return currentUserId === userId;
     };
 
+    const renderActions = (userItem) => {
+        const isSelf = isCurrentUser(userItem._id);
+        const isLoading = actionLoading === userItem._id;
+        const showMenu = showActions === userItem._id;
+
+        return (
+            <div className="flex justify-center">
+                <div className={`dropdown dropdown-end ${showMenu ? "dropdown-open" : ""}`}>
+                    <button
+                        type="button"
+                        tabIndex={0}
+                        className="btn btn-sm btn-ghost"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            setShowActions(showMenu ? null : userItem._id);
+                        }}
+                        disabled={isLoading}
+                    >
+                        {isLoading ? (
+                            <span className="loading loading-spinner loading-xs"></span>
+                        ) : (
+                            <MoreVertical className="w-4 h-4" />
+                        )}
+                    </button>
+                    <ul
+                        tabIndex={0}
+                        className="dropdown-content menu bg-base-100 rounded-box z-[100] w-52 p-2 shadow-xl border-2 border-base-300"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                        }}
+                    >
+                            {/* Make Admin/Student */}
+                            {userItem.role === "admin" ? (
+                                <li>
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleMakeStudent(userItem._id, userItem.name);
+                                        }}
+                                        disabled={isSelf || isLoading}
+                                        className={isSelf ? "opacity-50 cursor-not-allowed" : ""}
+                                        title={isSelf ? "Cannot change your own role" : ""}
+                                    >
+                                        <ShieldOff className="w-4 h-4" />
+                                        Make Student
+                                    </button>
+                                </li>
+                            ) : (
+                                <li>
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleMakeAdmin(userItem._id, userItem.name);
+                                        }}
+                                        disabled={isSelf || isLoading}
+                                        className={isSelf ? "opacity-50 cursor-not-allowed" : ""}
+                                        title={isSelf ? "Cannot change your own role" : ""}
+                                    >
+                                        <Shield className="w-4 h-4" />
+                                        Make Admin
+                                    </button>
+                                </li>
+                            )}
+    
+                            {/* Ban/Unban */}
+                            <li>
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleBan(userItem._id, userItem.name, userItem.isBanned);
+                                    }}
+                                    disabled={isSelf || isLoading}
+                                    className={isSelf ? "opacity-50 cursor-not-allowed" : ""}
+                                    title={isSelf ? "Cannot ban yourself" : ""}
+                                >
+                                    {userItem.isBanned ? (
+                                        <>
+                                            <Unlock className="w-4 h-4" />
+                                            Unban User
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Ban className="w-4 h-4" />
+                                            Ban User
+                                        </>
+                                    )}
+                                </button>
+                            </li>
+    
+                            <div className="divider my-1"></div>
+    
+                            {/* Delete */}
+                            <li>
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDelete(userItem._id, userItem.name);
+                                    }}
+                                    disabled={isSelf || isLoading}
+                                    className={`text-error ${isSelf ? "opacity-50 cursor-not-allowed" : ""}`}
+                                    title={isSelf ? "Cannot delete yourself" : ""}
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                    Delete User
+                                </button>
+                            </li>
+                        </ul>
+                </div>
+            </div>
+        );
+    };
+
     if (loading) {
         return (
             <div className="flex justify-center items-center py-12">
@@ -187,7 +304,49 @@ export default function ManageUsers() {
             ) : (
                 <div className="card bg-base-100 border-2 border-base-300 shadow-lg">
                     <div className="card-body p-0">
-                        <div className="overflow-x-auto">
+                        {/* Phone layout: one card per user */}
+                        <div className="md:hidden divide-y divide-base-300">
+                            {users.map((userItem) => (
+                                <div
+                                    key={userItem._id}
+                                    className={`p-3 space-y-2 ${userItem.isBanned ? "opacity-60" : ""}`}
+                                >
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div className="min-w-0">
+                                            <p className="font-semibold break-words">{userItem.name}</p>
+                                            <p className="text-sm text-base-content/70 break-all">{userItem.email}</p>
+                                        </div>
+                                        {renderActions(userItem)}
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <span
+                                            className={`badge font-semibold ${
+                                                userItem.role === "admin" ? "badge-error" : "badge-primary"
+                                            }`}
+                                        >
+                                            {userItem.role?.toUpperCase()}
+                                        </span>
+                                        {userItem.isBanned ? (
+                                            <span className="badge badge-warning font-semibold">
+                                                <Ban className="w-3 h-3 mr-1" />
+                                                BANNED
+                                            </span>
+                                        ) : (
+                                            <span className="badge badge-success font-semibold">
+                                                <Unlock className="w-3 h-3 mr-1" />
+                                                ACTIVE
+                                            </span>
+                                        )}
+                                        <span className="text-xs text-base-content/60">
+                                            Joined {new Date(userItem.createdAt).toLocaleDateString()}
+                                        </span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Tablet/desktop layout: table */}
+                        <div className="hidden md:block overflow-x-auto">
                             <table className="table w-full">
                                 <thead className="bg-base-200">
                                     <tr>
@@ -201,10 +360,6 @@ export default function ManageUsers() {
                                 </thead>
                                 <tbody>
                                     {users.map((userItem) => {
-                                        const isSelf = isCurrentUser(userItem._id);
-                                        const isLoading = actionLoading === userItem._id;
-                                        const showMenu = showActions === userItem._id;
-
                                         return (
                                             <tr
                                                 key={userItem._id}
@@ -240,114 +395,7 @@ export default function ManageUsers() {
                                                 </td>
                                                 <td>{new Date(userItem.createdAt).toLocaleDateString()}</td>
                                                 <td>
-                                                    <div className="flex justify-center">
-                                                        <div className={`dropdown dropdown-end ${showMenu ? "dropdown-open" : ""}`}>
-                                                            <button
-                                                                type="button"
-                                                                tabIndex={0}
-                                                                className="btn btn-sm btn-ghost"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    e.preventDefault();
-                                                                    setShowActions(showMenu ? null : userItem._id);
-                                                                }}
-                                                                disabled={isLoading}
-                                                            >
-                                                                {isLoading ? (
-                                                                    <span className="loading loading-spinner loading-xs"></span>
-                                                                ) : (
-                                                                    <MoreVertical className="w-4 h-4" />
-                                                                )}
-                                                            </button>
-                                                            <ul
-                                                                tabIndex={0}
-                                                                className="dropdown-content menu bg-base-100 rounded-box z-[100] w-52 p-2 shadow-xl border-2 border-base-300"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                }}
-                                                            >
-                                                                    {/* Make Admin/Student */}
-                                                                    {userItem.role === "admin" ? (
-                                                                        <li>
-                                                                            <button
-                                                                                type="button"
-                                                                                onClick={(e) => {
-                                                                                    e.stopPropagation();
-                                                                                    handleMakeStudent(userItem._id, userItem.name);
-                                                                                }}
-                                                                                disabled={isSelf || isLoading}
-                                                                                className={isSelf ? "opacity-50 cursor-not-allowed" : ""}
-                                                                                title={isSelf ? "Cannot change your own role" : ""}
-                                                                            >
-                                                                                <ShieldOff className="w-4 h-4" />
-                                                                                Make Student
-                                                                            </button>
-                                                                        </li>
-                                                                    ) : (
-                                                                        <li>
-                                                                            <button
-                                                                                type="button"
-                                                                                onClick={(e) => {
-                                                                                    e.stopPropagation();
-                                                                                    handleMakeAdmin(userItem._id, userItem.name);
-                                                                                }}
-                                                                                disabled={isSelf || isLoading}
-                                                                                className={isSelf ? "opacity-50 cursor-not-allowed" : ""}
-                                                                                title={isSelf ? "Cannot change your own role" : ""}
-                                                                            >
-                                                                                <Shield className="w-4 h-4" />
-                                                                                Make Admin
-                                                                            </button>
-                                                                        </li>
-                                                                    )}
-
-                                                                    {/* Ban/Unban */}
-                                                                    <li>
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                handleBan(userItem._id, userItem.name, userItem.isBanned);
-                                                                            }}
-                                                                            disabled={isSelf || isLoading}
-                                                                            className={isSelf ? "opacity-50 cursor-not-allowed" : ""}
-                                                                            title={isSelf ? "Cannot ban yourself" : ""}
-                                                                        >
-                                                                            {userItem.isBanned ? (
-                                                                                <>
-                                                                                    <Unlock className="w-4 h-4" />
-                                                                                    Unban User
-                                                                                </>
-                                                                            ) : (
-                                                                                <>
-                                                                                    <Ban className="w-4 h-4" />
-                                                                                    Ban User
-                                                                                </>
-                                                                            )}
-                                                                        </button>
-                                                                    </li>
-
-                                                                    <div className="divider my-1"></div>
-
-                                                                    {/* Delete */}
-                                                                    <li>
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                handleDelete(userItem._id, userItem.name);
-                                                                            }}
-                                                                            disabled={isSelf || isLoading}
-                                                                            className={`text-error ${isSelf ? "opacity-50 cursor-not-allowed" : ""}`}
-                                                                            title={isSelf ? "Cannot delete yourself" : ""}
-                                                                        >
-                                                                            <Trash2 className="w-4 h-4" />
-                                                                            Delete User
-                                                                        </button>
-                                                                    </li>
-                                                                </ul>
-                                                        </div>
-                                                    </div>
+                                                    {renderActions(userItem)}
                                                 </td>
                                             </tr>
                                         );

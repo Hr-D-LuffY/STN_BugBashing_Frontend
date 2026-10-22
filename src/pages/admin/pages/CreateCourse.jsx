@@ -1,12 +1,24 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { createCourseAsync } from "../../../store/slices/adminSlice";
+import { createCourseAsync, clearError, clearSuccess } from "../../../store/slices/adminSlice";
 import { useNavigate } from "react-router-dom";
 
 export default function CreateCourse() {
     const navigate = useNavigate();
     const dispatch = useDispatch();
     const { creating, success, error } = useSelector((state) => state.admin);
+    const redirectTimer = useRef(null);
+
+    // Don't let a previous page's error/success (or this page's own) leak to other pages.
+    useEffect(() => {
+        dispatch(clearError());
+        dispatch(clearSuccess());
+        return () => {
+            clearTimeout(redirectTimer.current);
+            dispatch(clearError());
+            dispatch(clearSuccess());
+        };
+    }, [dispatch]);
 
     const [form, setForm] = useState({
         title: "",
@@ -65,11 +77,12 @@ export default function CreateCourse() {
             syllabus: form.syllabus,
         };
 
-        dispatch(createCourseAsync(payload)).then((result) => {
-            if (!result.payload?.message && !error) {
-                setTimeout(() => navigate("/admin/courses"), 1500);
-            }
-        });
+        const result = await dispatch(createCourseAsync(payload));
+        // Only leave the form when the save actually succeeded; on failure keep
+        // the typed data and show the error on this page.
+        if (createCourseAsync.fulfilled.match(result)) {
+            redirectTimer.current = setTimeout(() => navigate("/admin/courses"), 1500);
+        }
     };
 
     if (success) {

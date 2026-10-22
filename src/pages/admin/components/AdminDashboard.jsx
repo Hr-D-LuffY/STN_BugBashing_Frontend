@@ -40,7 +40,7 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* content area */}
-                <main className="flex-1 p-2 sm:p-4 lg:p-5 bg-base-100 w-full">
+                <main className="flex-1 p-2 sm:p-4 lg:p-5 bg-base-100 w-full min-w-0">
                     <Outlet />
                 </main>
 

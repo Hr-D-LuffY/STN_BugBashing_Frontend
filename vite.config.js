@@ -11,7 +11,9 @@ export default defineConfig({
           // Vendor chunks
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
           'redux-vendor': ['@reduxjs/toolkit', 'react-redux'],
-          'ui-vendor': ['recharts', 'lucide-react'],
+          // recharts is intentionally not listed: it is only used by the lazy-loaded
+          // admin pages, so Vite keeps it out of the chunks public pages download.
+          'ui-vendor': ['lucide-react'],
           'axios-vendor': ['axios'],
         },
       },
