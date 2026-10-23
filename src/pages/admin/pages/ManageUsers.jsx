@@ -71,7 +71,7 @@ export default function ManageUsers() {
     }, [showActions]);
 
     const handleDelete = async (userId, userName) => {
-        if (!window.confirm(`Are you sure you want to delete user "${userName}"? This action cannot be undone.`)) {
+        if (!window.confirm(`Are you sure you want to delete user "${userName}"? Their enrollments and submissions will be deleted too. This action cannot be undone.`)) {
             return;
         }
 

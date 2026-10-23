@@ -17,6 +17,7 @@ export default function Enrollments() {
 
     // Filter enrollments by selected course and student name
     const filteredEnrollments = enrollments.filter((enr) => {
+        if (!enr.student || !enr.course) return false; // student or course was deleted
         const matchCourse = !selectedCourse || enr.course?._id === selectedCourse;
         const matchStudent = !searchStudent || enr.student?.name?.toLowerCase().includes(searchStudent.toLowerCase());
         return matchCourse && matchStudent;

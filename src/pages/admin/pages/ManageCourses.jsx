@@ -46,7 +46,7 @@ export default function ManageCourses() {
     }, [dispatch, page]);
 
     const handleDelete = (id) => {
-        if (window.confirm("Are you sure you want to delete this course?")) {
+        if (window.confirm("Are you sure you want to delete this course? Its enrollments and submissions will be deleted too.")) {
             dispatch(deleteCourseAsync(id));
         }
     };
