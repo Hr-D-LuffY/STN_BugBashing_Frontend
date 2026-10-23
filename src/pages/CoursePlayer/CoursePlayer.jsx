@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Navigate, useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchCourseById } from "../../store/slices/coursesSlice";
 import { completeLessonAsync, fetchMyEnrollments } from "../../store/slices/enrollmentSlice";
+import { getMeAsync } from "../../store/slices/authSlice";
 import { getMyEnrollments } from "../../services/enrollment.api";
 import { submitAssignment } from "../../services/assignment.api";
 import { submitQuiz as submitQuizAPI } from "../../services/quiz.api";
@@ -48,11 +49,18 @@ export default function CoursePlayer() {
     const { id } = useParams();
     const dispatch = useDispatch();
     const [enrollment, setEnrollment] = useState(null);
+    const [enrollmentChecked, setEnrollmentChecked] = useState(false);
     const [selectedModule, setSelectedModule] = useState(0);
     const [selectedLesson, setSelectedLesson] = useState(0);
     const [loading, setLoading] = useState(true);
 
     const { currentCourse } = useSelector((state) => state.courses);
+    const { user, token } = useSelector((state) => state.auth);
+
+    // the profile is needed to tell admins (who are never enrolled) from students
+    useEffect(() => {
+        if (token && !user) dispatch(getMeAsync());
+    }, [token, user, dispatch]);
 
     useEffect(() => {
         dispatch(fetchCourseById(id)).then(() => setLoading(false));
@@ -64,6 +72,8 @@ export default function CoursePlayer() {
                 setEnrollment(userEnroll);
             } catch (err) {
                 console.error("Failed to load enrollment:", err);
+            } finally {
+                setEnrollmentChecked(true);
             }
         };
         fetchEnrollment();
@@ -99,12 +109,17 @@ export default function CoursePlayer() {
         }
     };
 
-    if (loading) {
+    if (loading || !enrollmentChecked || (token && !user)) {
         return (
             <div className="flex justify-center items-center min-h-screen">
                 <span className="loading loading-spinner loading-lg"></span>
             </div>
         );
+    }
+
+    // only enrolled students and admins may open the player
+    if (!enrollment && user?.role !== "admin") {
+        return <Navigate to={`/courses/${id}`} replace />;
     }
 
     if (!currentCourse) {
@@ -515,6 +530,8 @@ function QuizInterface({ quiz, courseId, lessonId, enrollment, onComplete }) {
     const [error, setError] = useState(null);
     const [previousSubmission, setPreviousSubmission] = useState(null);
     const [loadingPrevious, setLoadingPrevious] = useState(true);
+    // right answers per question; the server only sends them for submitted quizzes
+    const [correctAnswers, setCorrectAnswers] = useState(null);
 
     // Check for previous submission on mount
     useEffect(() => {
@@ -538,6 +555,7 @@ function QuizInterface({ quiz, courseId, lessonId, enrollment, onComplete }) {
                     })[0];
 
                     setPreviousSubmission(previous);
+                    if (previous.correctAnswers?.length) setCorrectAnswers(previous.correctAnswers);
                     // Don't set submitted to true - allow retaking
                     // setSubmitted(true);
                     setScore(previous.percent || previous.score || 0);
@@ -606,6 +624,7 @@ function QuizInterface({ quiz, courseId, lessonId, enrollment, onComplete }) {
             const result = response.data;
 
             setScore(result.percent);
+            setCorrectAnswers(result.correctAnswers || null);
             setSubmitted(true);
             // Store the submission result to show marks immediately
             const submissionResult = {
@@ -706,9 +725,10 @@ function QuizInterface({ quiz, courseId, lessonId, enrollment, onComplete }) {
                 <div className="space-y-4 sm:space-y-6 mt-3 sm:mt-4">
                     {quiz.map((question, qIdx) => {
                         const userAnswer = answers[qIdx];
-                        const isCorrect = userAnswer === question.correctIndex;
-                        const showResults = submitted && previousSubmission;
-                        const showReview = previousSubmission && !submitted;
+                        const correctIndex = correctAnswers?.[qIdx];
+                        const isCorrect = userAnswer === correctIndex;
+                        const showResults = submitted && previousSubmission && correctAnswers;
+                        const showReview = previousSubmission && !submitted && correctAnswers;
 
                         return (
                             <div
@@ -746,7 +766,7 @@ function QuizInterface({ quiz, courseId, lessonId, enrollment, onComplete }) {
                                                     Your answer: <span className="text-error">{question.options[userAnswer]}</span>
                                                 </p>
                                                 <p className="text-xs text-base-content/70">
-                                                    Correct answer: <span className="text-success font-semibold">{question.options[question.correctIndex]}</span>
+                                                    Correct answer: <span className="text-success font-semibold">{question.options[correctIndex]}</span>
                                                 </p>
                                             </div>
                                         )}
@@ -755,16 +775,16 @@ function QuizInterface({ quiz, courseId, lessonId, enrollment, onComplete }) {
 
                                 {showReview && !loading && (
                                     <p className="text-xs mb-2 text-base-content/70">
-                                        💡 Correct answer: <span className="font-semibold">{question.options[question.correctIndex]}</span>
+                                        💡 Correct answer: <span className="font-semibold">{question.options[correctIndex]}</span>
                                     </p>
                                 )}
                                 <div className="space-y-2">
                                     {question.options?.map((option, oIdx) => (
                                         <label
                                             key={oIdx}
-                                            className={`cursor-pointer flex gap-2 sm:gap-3 p-2 rounded transition ${showResults && oIdx === question.correctIndex ? 'bg-success/20' :
+                                            className={`cursor-pointer flex gap-2 sm:gap-3 p-2 rounded transition ${showResults && oIdx === correctIndex ? 'bg-success/20' :
                                                 showResults && oIdx === userAnswer && !isCorrect ? 'bg-error/20' :
-                                                    showReview && oIdx === question.correctIndex ? 'bg-success/20' :
+                                                    showReview && oIdx === correctIndex ? 'bg-success/20' :
                                                         showReview && oIdx === userAnswer && !isCorrect ? 'bg-error/20' :
                                                             'hover:bg-base-200'
                                                 }`}
@@ -782,13 +802,13 @@ function QuizInterface({ quiz, courseId, lessonId, enrollment, onComplete }) {
                                                 className="radio radio-sm flex-shrink-0"
                                             />
                                             <span className="text-xs sm:text-sm flex-1">{option}</span>
-                                            {showResults && oIdx === question.correctIndex && (
+                                            {showResults && oIdx === correctIndex && (
                                                 <span className="text-success font-semibold">✓ Correct Answer</span>
                                             )}
                                             {showResults && oIdx === userAnswer && !isCorrect && (
                                                 <span className="text-error font-semibold">✗ Your Answer</span>
                                             )}
-                                            {showReview && !loading && oIdx === question.correctIndex && (
+                                            {showReview && !loading && oIdx === correctIndex && (
                                                 <span className="text-success">✓ Correct</span>
                                             )}
                                             {showReview && !loading && oIdx === userAnswer && !isCorrect && (
@@ -866,7 +886,8 @@ function QuizInterface({ quiz, courseId, lessonId, enrollment, onComplete }) {
                                 <div className="space-y-2">
                                     {quiz.map((question, qIdx) => {
                                         const userAnswer = answers[qIdx];
-                                        const isCorrect = userAnswer === question.correctIndex;
+                                        const correctIndex = correctAnswers?.[qIdx];
+                                        const isCorrect = userAnswer === correctIndex;
                                         return (
                                             <div
                                                 key={qIdx}
@@ -887,7 +908,7 @@ function QuizInterface({ quiz, courseId, lessonId, enrollment, onComplete }) {
                                                         </p>
                                                         {!isCorrect && (
                                                             <p className="text-xs mt-1 text-success">
-                                                                Correct answer: <span className="font-semibold">{question.options[question.correctIndex]}</span>
+                                                                Correct answer: <span className="font-semibold">{question.options[correctIndex]}</span>
                                                             </p>
                                                         )}
                                                     </div>
